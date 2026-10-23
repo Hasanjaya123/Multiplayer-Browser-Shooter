@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Mini Militia PC &amp; Mobile: Outpost (60Hz Multiplayer)</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <!-- Main Hardware-Accelerated Game Canvas -->
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- ==================== START / DEPLOY SCREEN ==================== -->
+  <div id="startScreen" class="overlay-screen">
+    <div class="start-card">
+      <div class="badge-row">
+        <span class="engine-badge">60HZ AUTHORITATIVE NETCODE</span>
+        <span class="map-badge">PC &amp; MOBILE CROSSPLAY</span>
+      </div>
+      <h1 class="game-title">DOODLE ARMY <span>OUTPOST</span></h1>
+      <p class="game-subtitle">Tactical 2D Jetpack Shooter &bull; PC Mouse/KB &amp; Mobile Twin-Stick Controls</p>
+
+      <div class="deploy-grid">
+        <!-- Left Column: Soldier Customization & Admin Match Timer -->
+        <div class="customizer-col">
+          <div class="preview-box">
+            <canvas id="previewCanvas" width="140" height="140"></canvas>
+            <div id="previewColorName" class="preview-caption">Olive Commando</div>
+          </div>
+
+          <label class="field-label" for="playerNameInput">SOLDIER CALLSIGN</label>
+          <input
+            type="text"
+            id="playerNameInput"
+            class="callsign-input"
+            maxlength="16"
+            placeholder="Enter Callsign..."
+            value=""
+            autocomplete="off"
+          />
+
+          <label class="field-label">TACTICAL CAMO COLOR</label>
+          <div id="colorSwatches" class="color-swatches"></div>
+
+          <!-- Admin Match Timer Selector -->
+          <div class="admin-timer-setup">
+            <label class="field-label" for="startMatchDurationSelect">&#9201; MATCH TIMER (ADMIN)</label>
+            <select id="startMatchDurationSelect" class="timer-select">
+              <option value="120">2 Minutes (Quick Skirmish)</option>
+              <option value="180">3 Minutes (Fast Match)</option>
+              <option value="300" selected>5 Minutes (Standard Match)</option>
+              <option value="480">8 Minutes (Extended Battle)</option>
+              <option value="600">10 Minutes (Endurance War)</option>
+              <option value="900">15 Minutes (Marathon)</option>
+            </select>
+          </div>
+
+          <button id="joinBtn" class="join-btn">
+            <span>JOIN / RESUME BATTLE</span>
+            <kbd>ENTER</kbd>
+          </button>
+
+          <button id="startOpenSettingsBtn" class="secondary-start-btn" type="button">
+            &#9881; SETTINGS (SENSITIVITY, VOLUME &amp; MOBILE)
+          </button>
+        </div>
+
+        <!-- Right Column: Controls & Match Rules -->
+        <div class="controls-col">
+          <h3 class="panel-heading">PC &amp; MOBILE CONTROLS</h3>
+          <div class="keybind-list">
+            <div class="keybind-row"><span class="keys"><kbd>A</kbd><kbd>D</kbd> / <kbd>L-STICK</kbd></span><span>Move Left / Right</span></div>
+            <div class="keybind-row"><span class="keys"><kbd>W</kbd><kbd>SPACE</kbd> / <kbd>JET</kbd></span><span>Jetpack Thrust (Hold)</span></div>
+            <div class="keybind-row"><span class="keys"><kbd>C</kbd> / <kbd>CROUCH</kbd></span><span>Crouch &amp; Hide in Stealth Bushes</span></div>
+            <div class="keybind-row"><span class="keys"><kbd>MOUSE</kbd> / <kbd>R-STICK</kbd></span><span>360&deg; Aim &amp; Fire (Pointer Locked on PC)</span></div>
+            <div class="keybind-row"><span class="keys"><kbd>RMB</kbd><kbd>G</kbd> &bull; <kbd>X</kbd></span><span>Throw Bomb &bull; Switch (Frag / M7 Gas / Mine)</span></div>
+            <div class="keybind-row"><span class="keys"><kbd>Q</kbd> / <kbd>TAP SLOT</kbd></span><span>Switch Primary / Secondary</span></div>
+            <div class="keybind-row"><span class="keys"><kbd>SCROLL</kbd> / <kbd>SLIDER</kbd></span><span>Adjust Sniper FOV (Sniper Only)</span></div>
+            <div class="keybind-row"><span class="keys"><kbd>TAB</kbd> / <kbd>ESC</kbd></span><span>Scoreboard &amp; Unlock Mouse Cursor</span></div>
+          </div>
+
+          <div class="arsenal-Highlight">
+            <div class="arsenal-title">RARE FLAMETHROWER, M7 GAS, PROXY MINES &amp; BUSHES</div>
+            <p>Hunt for the rare <strong>M2-A1 Flamethrower</strong> at center map, deploy <strong>M7 Toxic Gas Bombs</strong> &amp; surface-sticking <strong>Proxy Mines</strong>, and crouch inside <strong>Stealth Bushes</strong> to ambush enemies!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== IN-GAME TACTICAL HUD ==================== -->
+  <div id="hudOverlay" class="hud-overlay hidden">
+    <!-- TOP-CENTER: Match Countdown Timer, Tab Scoreboard, Settings & Pause/Resume Buttons -->
+    <div id="hudTopCenter" class="hud-top-center">
+      <div class="match-clock-card">
+        <div class="clock-meta-row">
+          <span id="adminRoleBadge" class="admin-role-badge hidden">&#9733; ADMIN</span>
+          <span class="clock-label">MATCH TIME</span>
+        </div>
+        <div id="matchTimerDisplay" class="match-timer-digits">05:00</div>
+      </div>
+      <div class="top-quick-btns">
+        <button id="openTabScoreBtn" class="top-icon-btn" title="Live Scoreboard: Ping (ms), Kills, Deaths & K/D (Shortcut: TAB)">
+          &#128202; <span>TAB</span>
+        </button>
+        <button id="openSettingsBtn" class="top-icon-btn" title="Sensitivity, Audio Volume & Mobile Settings">
+          &#9881; <span>SETTINGS</span>
+        </button>
+        <button id="openPauseMenuBtn" class="top-icon-btn" title="Pause / Resume / Unlock Cursor (ESC)">
+          &#9208; <span>MENU (ESC)</span>
+        </button>
+        <button id="fullscreenBtn" class="top-icon-btn" title="Toggle Fullscreen">
+          &#9974;
+        </button>
+      </div>
+    </div>
+
+    <!-- TOP-LEFT: Radar (and Vitals on Mobile; Vitals docks over Gun Panel on PC) -->
+    <div class="hud-top-left">
+      <div class="vitals-card">
+        <div class="vital-row hp-row">
+          <div class="vital-label-row">
+            <span class="vital-icon hp-icon">&#10010;</span>
+            <span class="vital-name">LIFE</span>
+            <span id="hpStatusTag" class="vital-tag hidden">REGEN</span>
+            <span id="stealthStatusTag" class="vital-tag stealth-tag hidden">BUSH HIDDEN</span>
+            <span id="crouchStatusTag" class="vital-tag crouch-tag hidden">CROUCH</span>
+            <span id="hpValueText" class="vital-val">100</span>
+          </div>
+          <div class="bar-track hp-track">
+            <div id="hpDamageTrail" class="bar-trail" style="width: 100%;"></div>
+            <div id="hpBarFill" class="bar-fill hp-fill" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <div class="vital-row fuel-row">
+          <div class="vital-label-row">
+            <span class="vital-icon fuel-icon">&#128640;</span>
+            <span class="vital-name">ROCKET GAS</span>
+            <span id="weightPenaltyTag" class="vital-tag weight-tag hidden">-15% SPD</span>
+            <span id="fuelValueText" class="vital-val">100%</span>
+          </div>
+          <div class="bar-track fuel-track">
+            <div id="fuelBarFill" class="bar-fill fuel-fill" style="width: 100%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mini Outpost Tactical Radar -->
+      <div class="radar-card">
+        <canvas id="radarCanvas" width="210" height="78"></canvas>
+      </div>
+    </div>
+
+    <!-- TOP-RIGHT: Leaderboard & Kill Feed (Loadout Card docks at Bottom-Center on PC) -->
+    <div class="hud-top-right">
+      <div class="loadout-card">
+        <div class="weapon-slots-row">
+          <!-- Slot 1 (Tappable on Mobile to switch weapon) -->
+          <div id="weaponSlot0" class="weapon-slot active" title="Tap or Press 1 to equip">
+            <div class="slot-key">1</div>
+            <canvas id="weaponIcon0" width="86" height="32"></canvas>
+            <div id="weaponName0" class="slot-wname">M4A1</div>
+          </div>
+          <!-- Slot 2 (Tappable on Mobile to switch weapon) -->
+          <div id="weaponSlot1" class="weapon-slot" title="Tap or Press 2 to equip">
+            <div class="slot-key">2</div>
+            <canvas id="weaponIcon1" width="86" height="32"></canvas>
+            <div id="weaponName1" class="slot-wname">MACHETE</div>
+          </div>
+        </div>
+
+        <!-- SNIPER-ONLY ADJUSTABLE FIELD OF VIEW CONTROL -->
+        <div id="sniperFovPanel" class="sniper-fov-panel hidden">
+          <div class="sniper-fov-header">
+            <span class="sniper-fov-title">&#127919; SNIPER SCOPE FOV</span>
+            <span id="sniperFovValue" class="sniper-fov-val">1.50x</span>
+          </div>
+          <input
+            type="range"
+            id="sniperFovSlider"
+            class="sniper-fov-slider"
+            min="1.00"
+            max="2.05"
+            step="0.05"
+            value="1.50"
+          />
+          <div class="sniper-fov-hint">Scroll / Drag Slider to adjust Sniper FOV</div>
+        </div>
+
+        <div class="ammo-grenade-row">
+          <div class="ammo-box">
+            <div class="ammo-label">AMMO <span id="reloadBadge" class="reload-badge hidden">RELOAD</span></div>
+            <div class="ammo-numbers">
+              <span id="ammoMag">30</span>
+              <span class="ammo-sep">/</span>
+              <span id="ammoReserve">150</span>
+            </div>
+            <div class="reload-bar-wrap">
+              <div id="reloadBarFill" class="reload-bar-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <div class="grenade-box" title="Right-Click/G to Throw • Press X or Click to Switch Bomb Type">
+            <div class="ammo-label bomb-header-label">
+              <span id="activeBombLabel">FRAG</span>
+              <kbd class="bomb-switch-kbd" id="cycleBombBtn" title="Press X to switch bomb type">X</kbd>
+            </div>
+            <div class="bomb-selector-row">
+              <button type="button" id="bombPill1" class="bomb-pill active" data-bomb="1" title="Frag Grenade (3s Fuse)">
+                <span class="bomb-dot frag-dot"></span>
+                <span class="bomb-short">FRAG</span>
+                <strong id="bombCount1">2</strong>
+              </button>
+              <button type="button" id="bombPill2" class="bomb-pill" data-bomb="2" title="M7 Toxic Gas Bomb (Drains enemy HP in cloud)">
+                <span class="bomb-dot gas-dot"></span>
+                <span class="bomb-short">GAS</span>
+                <strong id="bombCount2">1</strong>
+              </button>
+              <button type="button" id="bombPill3" class="bomb-pill" data-bomb="3" title="Proxy Mine (Sticks to surfaces &amp; auto-detonates)">
+                <span class="bomb-dot mine-dot"></span>
+                <span class="bomb-short">MINE</span>
+                <strong id="bombCount3">1</strong>
+              </button>
+            </div>
+            <div id="grenadeIconsRow" class="grenade-icons-row hidden"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Kill/Death Leaderboard -->
+      <div class="leaderboard-card">
+        <div class="lb-header">
+          <span>LIVE STANDINGS</span>
+          <span class="lb-cols"><span>K</span><span>D</span></span>
+        </div>
+        <div id="leaderboardList" class="lb-list"></div>
+      </div>
+
+      <!-- Live Animated Kill Feed -->
+      <div id="killFeed" class="kill-feed"></div>
+    </div>
+
+    <!-- CENTER INTERACTION PROMPT (Tappable on Mobile!) -->
+    <div id="pickupPrompt" class="pickup-prompt hidden">
+      Tap / Press <kbd>E</kbd> to pick up <span id="pickupWeaponName">M249 SAW</span>
+    </div>
+
+    <!-- 5-SECOND RESPAWN BANNER WITH KILLER'S NAME -->
+    <div id="respawnBanner" class="respawn-banner hidden">
+      <div class="respawn-title">KILLED IN ACTION</div>
+      <div class="respawn-killer-box">
+        <span class="killed-by-label">KILLED BY</span>
+        <div id="respawnKillerName" class="killer-name-highlight">Enemy Soldier</div>
+        <div id="respawnWeaponUsed" class="killer-weapon-sub">with M4A1 Carbine</div>
+      </div>
+      <div class="respawn-timer-row">
+        RE-SPAWNING IN <span id="respawnCountdown">5.0</span>s
+      </div>
+      <div class="respawn-progress-track">
+        <div id="respawnProgressBar" class="respawn-progress-fill" style="width: 100%;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== MOBILE TWIN-STICK TOUCH CONTROLS ==================== -->
+    <div id="mobileControls" class="mobile-controls hidden">
+      <!-- Left Virtual Thumbstick: Move Left/Right + Push Up for Jetpack -->
+      <div id="leftJoystickZone" class="joystick-zone left-zone">
+        <div id="leftJoystickBase" class="joystick-base">
+          <div class="joystick-label">MOVE / FLY</div>
+          <div id="leftJoystickKnob" class="joystick-knob"></div>
+        </div>
+      </div>
+
+      <!-- Dedicated Left Jetpack Boost Button -->
+      <button id="mobileJetBtn" class="mobile-action-btn jet-btn">
+        <span>&#128640;</span>
+        <small>JETPACK</small>
+      </button>
+
+      <!-- Dedicated Left Crouch Button -->
+      <button id="mobileCrouchBtn" class="mobile-action-btn crouch-btn">
+        <span>&#129486;</span>
+        <small>CROUCH</small>
+      </button>
+
+      <!-- Right Virtual Thumbstick: 360° Aim + Pull Outer Ring to Shoot -->
+      <div id="rightJoystickZone" class="joystick-zone right-zone">
+        <div id="rightJoystickBase" class="joystick-base aim-base">
+          <div class="joystick-label">AIM &amp; FIRE</div>
+          <div id="rightJoystickKnob" class="joystick-knob aim-knob"></div>
+        </div>
+      </div>
+
+      <!-- Right Cluster Action Buttons -->
+      <div class="mobile-right-actions">
+        <button id="mobileFireBtn" class="mobile-action-btn fire-btn">
+          <span>&#128293;</span>
+          <small>FIRE</small>
+        </button>
+        <button id="mobileGrenadeBtn" class="mobile-action-btn frag-btn">
+          <span id="mobileBombIcon">&#128163;</span>
+          <small id="mobileBombLabel">FRAG</small>
+        </button>
+        <button id="mobileBombSwitchBtn" class="mobile-action-btn bomb-switch-btn">
+          <span>&#9851;</span>
+          <small>BOMB</small>
+        </button>
+        <button id="mobileMeleeBtn" class="mobile-action-btn melee-btn">
+          <span>&#128481;</span>
+          <small>MELEE</small>
+        </button>
+        <button id="mobileReloadBtn" class="mobile-action-btn reload-btn">
+          <span>&#128260;</span>
+          <small>RELOAD</small>
+        </button>
+        <button id="mobileSwapBtn" class="mobile-action-btn swap-btn">
+          <span>&#8644;</span>
+          <small>SWAP</small>
+        </button>
+        <button id="mobilePickupBtn" class="mobile-action-btn pickup-btn hidden">
+          <span>&#9995;</span>
+          <small>GRAB</small>
+        </button>
+      </div>
+    </div>
+
+    <!-- BOTTOM-RIGHT: Real-Time Telemetry & Quick Toggles -->
+    <div class="hud-bottom-right">
+      <button id="toggleTouchBtn" class="hud-action-btn" title="Toggle Mobile Touch Controls">
+        <span>&#128241;</span> <span id="touchBtnLabel">Touch: AUTO</span>
+      </button>
+      <button id="toggleBotBtn" class="hud-action-btn" title="Shortcut: B">
+        <kbd>B</kbd> <span id="botBtnLabel">Bot: ON</span>
+      </button>
+      <button id="toggleMuteBtn" class="hud-action-btn" title="Shortcut: M">
+        <kbd>M</kbd> <span id="muteBtnLabel">Audio: ON</span>
+      </button>
+      <div class="telemetry-pill">
+        <span class="tel-item"><strong id="fpsCounter">60</strong> FPS</span>
+        <span class="tel-sep">&bull;</span>
+        <span class="tel-item"><span id="pingDot" class="ping-dot good"></span><strong id="pingCounter">1</strong> ms</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== IN-MATCH PAUSE / RESUME & ADMIN MODAL ==================== -->
+  <div id="pauseModal" class="modal-backdrop hidden">
+    <div class="modal-card pause-card">
+      <div class="modal-header">
+        <h2>TACTICAL MENU</h2>
+        <span id="pauseAdminBadge" class="admin-role-badge hidden">&#9733; MATCH ADMIN</span>
+      </div>
+
+      <p class="modal-desc">The battle continues in real time. Click Resume below to jump right back into the fight.</p>
+
+      <button id="resumeGameBtn" class="primary-modal-btn resume-btn">
+        &#9654; RESUME &amp; CONTINUE GAME
+      </button>
+
+      <button id="pauseOpenSettingsBtn" class="secondary-modal-btn" type="button">
+        &#9881; SENSITIVITY, AUDIO &amp; MOBILE SETTINGS
+      </button>
+
+      <!-- Admin Match Timer & Restart Controls -->
+      <div id="adminPauseSection" class="admin-control-box hidden">
+        <div class="admin-box-title">&#9733; ADMIN MATCH CONTROLS</div>
+        <div class="admin-timer-row">
+          <label for="adminDurationInput">Match Timer (Seconds):</label>
+          <input type="number" id="adminDurationInput" class="admin-num-input" min="30" max="3600" step="30" value="300" />
+          <button id="adminApplyTimerBtn" class="admin-secondary-btn">Set Timer</button>
+        </div>
+        <div class="admin-preset-row">
+          <button class="preset-chip" data-sec="120">2m</button>
+          <button class="preset-chip" data-sec="180">3m</button>
+          <button class="preset-chip" data-sec="300">5m</button>
+          <button class="preset-chip" data-sec="600">10m</button>
+          <button class="preset-chip" data-sec="900">15m</button>
+        </div>
+        <button id="adminForceRestartBtn" class="admin-restart-btn">
+          &#128260; RESTART MATCH NOW
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SETTINGS MODAL (PC & MOBILE) ==================== -->
+  <div id="settingsModal" class="modal-backdrop hidden">
+    <div class="modal-card settings-card">
+      <div class="modal-header">
+        <h2>&#9881; GAME SETTINGS</h2>
+        <button id="closeSettingsHeaderBtn" class="modal-close-x" title="Close Settings">&times;</button>
+      </div>
+
+      <div class="settings-scroll-body">
+        <!-- 1. Sensitivity & Controls (PC & Mobile) -->
+        <div class="settings-section">
+          <div class="settings-sec-title">&#127919; SENSITIVITY &amp; CONTROLS (PC &amp; MOBILE)</div>
+
+          <div class="setting-row">
+            <div class="setting-label-wrap">
+              <label for="setAimSensitivity">Aim &amp; Look Sensitivity</label>
+              <span id="valAimSensitivity" class="setting-val-pill">1.00x</span>
+            </div>
+            <input type="range" id="setAimSensitivity" class="setting-slider" min="0.25" max="2.00" step="0.05" value="1.00" />
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-label-wrap">
+              <label for="setTouchSensitivity">Mobile Joystick Sensitivity</label>
+              <span id="valTouchSensitivity" class="setting-val-pill">1.00x</span>
+            </div>
+            <input type="range" id="setTouchSensitivity" class="setting-slider" min="0.50" max="2.00" step="0.05" value="1.00" />
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-label-wrap">
+              <label for="setTouchScale">Mobile Controls Button &amp; Stick Size</label>
+              <span id="valTouchScale" class="setting-val-pill">100%</span>
+            </div>
+            <input type="range" id="setTouchScale" class="setting-slider" min="70" max="135" step="5" value="100" />
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-label-wrap">
+              <label for="setTouchOpacity">Mobile Controls Opacity</label>
+              <span id="valTouchOpacity" class="setting-val-pill">85%</span>
+            </div>
+            <input type="range" id="setTouchOpacity" class="setting-slider" min="35" max="100" step="5" value="85" />
+          </div>
+
+          <div class="setting-toggle-grid">
+            <label class="setting-check-item">
+              <input type="checkbox" id="setMobileAutoFire" checked />
+              <span>Right-Stick Outer Ring Auto-Fire (Mobile)</span>
+            </label>
+            <label class="setting-check-item">
+              <input type="checkbox" id="setShowCrosshair" checked />
+              <span>Show Tactical Aim Sight Line</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 2. Audio & Volume -->
+        <div class="settings-section">
+          <div class="settings-sec-title">&#128266; AUDIO &amp; VOLUME</div>
+
+          <div class="setting-row">
+            <div class="setting-label-wrap">
+              <label for="setMasterVolume">Master Volume</label>
+              <span id="valMasterVolume" class="setting-val-pill">85%</span>
+            </div>
+            <input type="range" id="setMasterVolume" class="setting-slider" min="0" max="100" step="1" value="85" />
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-label-wrap">
+              <label for="setSfxVolume">Gunfire &amp; Explosions SFX</label>
+              <span id="valSfxVolume" class="setting-val-pill">100%</span>
+            </div>
+            <input type="range" id="setSfxVolume" class="setting-slider" min="0" max="100" step="1" value="100" />
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-label-wrap">
+              <label for="setJetpackVolume">Jetpack Thruster Hum</label>
+              <span id="valJetpackVolume" class="setting-val-pill">80%</span>
+            </div>
+            <input type="range" id="setJetpackVolume" class="setting-slider" min="0" max="100" step="1" value="80" />
+          </div>
+
+          <div class="setting-audio-actions">
+            <label class="setting-check-item">
+              <input type="checkbox" id="setMuteAudio" />
+              <span>Mute All Game Audio</span>
+            </label>
+            <button id="testAudioBtn" type="button" class="admin-secondary-btn">&#128266; Test Gunshot</button>
+          </div>
+        </div>
+
+        <!-- 3. Gameplay, Camera & Performance -->
+        <div class="settings-section">
+          <div class="settings-sec-title">&#9889; GAMEPLAY &amp; PERFORMANCE</div>
+
+          <div class="setting-row">
+            <div class="setting-label-wrap">
+              <label for="setScreenShake">Screen Shake Intensity</label>
+              <span id="valScreenShake" class="setting-val-pill">100%</span>
+            </div>
+            <input type="range" id="setScreenShake" class="setting-slider" min="0" max="150" step="5" value="100" />
+          </div>
+
+          <div class="setting-row-inline">
+            <label for="setParticleQuality">Particle Effects Density (FPS):</label>
+            <select id="setParticleQuality" class="timer-select compact">
+              <option value="1.0" selected>High (Ultra Detail)</option>
+              <option value="0.6">Medium (Balanced)</option>
+              <option value="0.3">Low (Mobile Max FPS)</option>
+            </select>
+          </div>
+
+          <div class="setting-toggle-grid">
+            <label class="setting-check-item">
+              <input type="checkbox" id="setShowDamageNums" checked />
+              <span>Floating Damage Numbers</span>
+            </label>
+            <label class="setting-check-item">
+              <input type="checkbox" id="setShowRadar" checked />
+              <span>Show Mini Outpost Radar</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-footer">
+        <button id="resetSettingsBtn" type="button" class="admin-secondary-btn">&#8634; Reset Defaults</button>
+        <button id="saveCloseSettingsBtn" type="button" class="primary-modal-btn resume-btn">&#10003; SAVE &amp; CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== LIVE TAB SCOREBOARD MODAL (PING, KILLS, DEATHS, K/D) ==================== -->
+  <div id="tabScoreboardModal" class="modal-backdrop tab-backdrop hidden">
+    <div class="modal-card rankings-card tab-score-card">
+      <div class="modal-header">
+        <div>
+          <h2>&#128202; LIVE TACTICAL SCOREBOARD</h2>
+          <div class="tab-sub-hint">Real-time Player Ping (ms), Kills, Deaths &amp; K/D Ratio &bull; Hold or Tap <kbd>TAB</kbd></div>
+        </div>
+        <button id="closeTabScoreBtn" class="modal-close-x" title="Close Scoreboard">&times;</button>
+      </div>
+
+      <div class="rankings-table-wrap">
+        <table class="rankings-table">
+          <thead>
+            <tr>
+              <th>RANK</th>
+              <th>SOLDIER</th>
+              <th>STATUS</th>
+              <th>KILLS</th>
+              <th>DEATHS</th>
+              <th>K/D RATIO</th>
+              <th>PING (MS)</th>
+            </tr>
+          </thead>
+          <tbody id="tabScoreboardBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== END-OF-MATCH VICTORY & PLAYER RANKINGS MODAL ==================== -->
+  <div id="matchEndModal" class="modal-backdrop hidden">
+    <div class="modal-card rankings-card">
+      <div class="victory-header">
+        <div class="match-over-tag">TIME EXPIRED &bull; MATCH COMPLETE</div>
+        <h2 id="winnerHeadline" class="winner-headline">&#127942; WINNER: COMMANDER</h2>
+        <p id="winnerSubline" class="winner-subline">Victory by Highest Kill Count</p>
+      </div>
+
+      <!-- Player Rankings Table -->
+      <div class="rankings-table-wrap">
+        <table class="rankings-table">
+          <thead>
+            <tr>
+              <th>RANK</th>
+              <th>SOLDIER</th>
+              <th>KILLS</th>
+              <th>DEATHS</th>
+              <th>K/D</th>
+              <th>STREAK</th>
+            </tr>
+          </thead>
+          <tbody id="finalRankingsBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Admin Restart Controls at Match End -->
+      <div id="adminEndControls" class="admin-end-box hidden">
+        <div class="admin-end-row">
+          <label for="endNextDurationSelect">Next Match Timer:</label>
+          <select id="endNextDurationSelect" class="timer-select compact">
+            <option value="120">2 Minutes</option>
+            <option value="180">3 Minutes</option>
+            <option value="300" selected>5 Minutes</option>
+            <option value="600">10 Minutes</option>
+            <option value="900">15 Minutes</option>
+          </select>
+        </div>
+        <button id="adminEndRestartBtn" class="join-btn restart-match-btn">
+          &#128260; RESTART GAME (START NEXT MATCH)
+        </button>
+      </div>
+
+      <div id="nonAdminEndWait" class="non-admin-wait hidden">
+        Waiting for the Match Admin to restart the next game...
+      </div>
+    </div>
+  </div>
+
+  <!-- Socket.io Client Library -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Main Game Engine -->
+  <script type="module" src="/game.js"></script>
+</body>
+</html>

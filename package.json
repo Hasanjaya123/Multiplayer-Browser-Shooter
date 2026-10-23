@@ -1,0 +1,16 @@
+{
+  "name": "mini-militia-pc-outpost",
+  "version": "1.0.0",
+  "description": "High-performance 60Hz authoritative multiplayer 2D shooter inspired by Doodle Army 2: Mini Militia (Outpost Map)",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1",
+    "ws": "^8.18.0"
+  }
+}
